@@ -4,11 +4,7 @@ import pandas as pd
 import requests
 
 SAVE_PATH = 'stock_rotation_20days.csv'
-MAX_DAYS = 20  # 최근 20일 데이터 유지를 위한 설정
-
-# 환경 변수에서 텔레그램 정보 가져오기
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+MAX_DAYS = 20  # 유지할 최대 일수 (20일)
 
 today_date = datetime.now().strftime('%Y-%m-%d')
 
@@ -91,46 +87,7 @@ if os.path.exists(SAVE_PATH):
     updated_df = updated_df[updated_df['날짜'].isin(keep_dates)]
 
   updated_df.to_csv(SAVE_PATH, index=False, encoding='utf-8-sig')
+  print(f'[{today_date}] 기존 CSV 파일에 누적 저장 완료!')
 else:
-  updated_df = final_df.copy()
-  updated_df.to_csv(SAVE_PATH, index=False, encoding='utf-8-sig')
-
-# 5. [점수 산정 및 텔레그램 발송 로직]
-# 순위 점수 + (비율 * 2)
-updated_df['순위점수'] = 31 - updated_df['순위']
-updated_df['일별점수'] = updated_df['순위점수'] + (updated_df['비율(%)'] * 2)
-
-# 종목별 집계
-summary = (
-    updated_df.groupby('종목명')
-    .agg(
-        총점수=('일별점수', 'sum'),
-        출현횟수=('날짜', 'count'),
-        최근현재가=('현재가', 'last'),
-        최근비율=('비율(%)', 'last'),
-    )
-    .reset_index()
-)
-
-# 총점수 상위 5개 선정
-top5 = summary.sort_values(by='총점수', ascending=False).head(5)
-accumulated_days = len(updated_df['날짜'].unique())
-
-# 텔레그램 메시지 생성
-msg = f'📈 [{today_date}] 주도주 분석 리포트\n'
-msg += f'(누적 분석 데이터: {accumulated_days}일치)\n\n'
-msg += '🔥 [최우수 추천 종목 TOP 5]\n'
-
-for idx, row in enumerate(top5.itertuples(), 1):
-  msg += (
-      f'{idx}. {row.종목명}\n'
-      f'   • 총점수: {row.총점수:.1f}점 (출현 {row.출현횟수}회)\n'
-      f'   • 현재가: {row.최근현재가:,.0f}원 | 당일비율: {row.최근비율:.2f}%\n\n'
-  )
-
-# 텔레그램 전송 함수
-if TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
-  telegram_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-  payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': msg}
-  requests.post(telegram_url, data=payload)
-  print('텔레그램 메시지 발송 완료!')
+  final_df.to_csv(SAVE_PATH, index=False, encoding='utf-8-sig')
+  print(f'[{today_date}] 최초 CSV 파일 생성 완료!')
