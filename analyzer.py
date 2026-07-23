@@ -39,15 +39,15 @@ summary = df.groupby('종목명').agg(
     시가총액=('시가총액', 'last')
 ).reset_index()
 
-# 20위까지 추출
-top20 = summary.sort_values(by='총점수', ascending=False).head(20)
+# [수정됨] 20위 -> 10위까지만 추출
+top10 = summary.sort_values(by='총점수', ascending=False).head(10)
 accumulated_days = len(df['날짜'].unique())
 
-msg = f"📈 [{today_date}] 주도주 리포트\n"
+msg = f"📈 [{today_date}] 주도주 리포트 (TOP 10)\n"
 msg += f"(총 {accumulated_days}일 누적 / 거래대금+회전율 커스텀 점수)\n\n"
 
 # 핸드폰 화면에 쏙 들어오게 가독성 압축 포맷
-for idx, row in enumerate(top20.itertuples(), 1):
+for idx, row in enumerate(top10.itertuples(), 1):
     msg += f"{idx}. {row.종목명} ({row.총점수:.0f}점 | {row.출현횟수}회)\n"
     msg += f" - {row.최근현재가:,.0f}원 | 시총 {row.시가총액:,.0f}억 | 회전율 {row.최근비율:.1f}%\n"
 
