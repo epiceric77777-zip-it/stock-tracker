@@ -30,26 +30,30 @@ def calculate_new_score(group):
 
 df = df.groupby('날짜', group_keys=False).apply(calculate_new_score)
 
-# 종목별 20일 총합
+# 종목별 누적 총합 (최근 거래대금도 함께 가져오기 위해 'last' 사용)
 summary = df.groupby('종목명').agg(
     총점수=('일별점수', 'sum'),
     출현횟수=('날짜', 'count'),
-    최근현재가=('현재가', 'last'),
+    최근거래대금=('거래대금', 'last'),
     최근비율=('비율(%)', 'last'),
     시가총액=('시가총액', 'last')
 ).reset_index()
 
-# [수정됨] 20위 -> 10위까지만 추출
+# 상위 10개 추출
 top10 = summary.sort_values(by='총점수', ascending=False).head(10)
 accumulated_days = len(df['날짜'].unique())
 
+# [수정됨] "거래대금+회전율 커스텀 점수" 문구 제거
 msg = f"📈 [{today_date}] 주도주 리포트 (TOP 10)\n"
-msg += f"(총 {accumulated_days}일 누적 / 거래대금+회전율 커스텀 점수)\n\n"
+msg += f"(총 {accumulated_days}일 누적)\n\n"
 
-# 핸드폰 화면에 쏙 들어오게 가독성 압축 포맷
+# [수정됨] 출력 순서: 거래대금 -> 시가총액 -> 회전율
 for idx, row in enumerate(top10.itertuples(), 1):
+    # 거래대금 단위를 억 단위로 보기 쉽게 환산 (원 단위이므로 1억 = 100,000,000)
+    trade_amt_billion = row.최근거래대금 / 100_000_000
+    
     msg += f"{idx}. {row.종목명} ({row.총점수:.0f}점 | {row.출현횟수}회)\n"
-    msg += f" - {row.최근현재가:,.0f}원 | 시총 {row.시가총액:,.0f}억 | 회전율 {row.최근비율:.1f}%\n"
+    msg += f" - 거래대금 {trade_amt_billion:,.0f}억 | 시총 {row.시가총액:,.0f}억 | 회전율 {row.최근비율:.1f}%\n"
 
 print("전송할 메시지 미리보기:\n", msg)
 
