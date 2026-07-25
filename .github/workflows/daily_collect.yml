@@ -2,9 +2,8 @@ name: Daily Stock Data Collector & Analyzer
 
 on:
   schedule:
-    # 한국 시간 매주 월~금 오후 3시 35분 실행
-    - cron: '35 6 * * 1-5'
-  workflow_dispatch: # 수동 실행 버튼 활성화
+    - cron: '38 6 * * 1-5'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -27,11 +26,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas requests lxml html5lib
 
-    # 1. 수집 스크립트 먼저 실행 (stock_rotation_20days.csv 생성/누적)
     - name: Run Collector Script
       run: python collector.py
 
-    # 2. 누적된 CSV 파일 깃허브 저장소에 Commit & Push
     - name: Commit & Push Changes
       run: |
         git config --local user.email "action@github.com"
@@ -40,9 +37,14 @@ jobs:
         git commit -m "Auto update stock data" || exit 0
         git push
 
-    # 3. 점수 분석 및 텔레그램 발송 스크립트 실행
-    - name: Run Analyzer Script
+    - name: Run Analyzer Script (My Telegram)
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: python analyzer.py
+
+    - name: Run Friend Analyzer Script (Friends Telegram Channel)
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        FRIEND_CHAT_ID: ${{ secrets.FRIEND_CHAT_ID }}
+      run: python friend_analyzer.py
