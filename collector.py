@@ -3,7 +3,8 @@ from datetime import datetime
 import pandas as pd
 import requests
 
-SAVE_PATH = 'stock_rotation_20days.csv'
+SAVE_PATH_20DAYS = 'stock_rotation_20days.csv'
+SAVE_PATH_INFINITE = 'stock_rotation_infinite.csv' # 영구 보존용 파일 추가
 MAX_DAYS = 20
 today_date = datetime.now().strftime('%Y-%m-%d')
 
@@ -55,8 +56,9 @@ top30_df['순위'] = top30_df.index + 1
 
 final_df = top30_df[['날짜', '순위', '종목명', '현재가', '거래대금', '시가총액', '비율(%)', '등락률']]
 
-if os.path.exists(SAVE_PATH):
-    existing_df = pd.read_csv(SAVE_PATH)
+# [1] 20일 유지용 파일 저장 (기존 로직)
+if os.path.exists(SAVE_PATH_20DAYS):
+    existing_df = pd.read_csv(SAVE_PATH_20DAYS)
     existing_df = existing_df[existing_df['날짜'] != today_date]
     updated_df = pd.concat([existing_df, final_df], ignore_index=True)
     
@@ -64,6 +66,16 @@ if os.path.exists(SAVE_PATH):
     if len(unique_dates) > MAX_DAYS:
         updated_df = updated_df[updated_df['날짜'].isin(unique_dates[-MAX_DAYS:])]
         
-    updated_df.to_csv(SAVE_PATH, index=False, encoding='utf-8-sig')
+    updated_df.to_csv(SAVE_PATH_20DAYS, index=False, encoding='utf-8-sig')
 else:
-    final_df.to_csv(SAVE_PATH, index=False, encoding='utf-8-sig')
+    final_df.to_csv(SAVE_PATH_20DAYS, index=False, encoding='utf-8-sig')
+
+# [2] 영구 보존(무한 누적)용 파일 저장 (새로운 로직)
+if os.path.exists(SAVE_PATH_INFINITE):
+    infinite_df = pd.read_csv(SAVE_PATH_INFINITE)
+    # 하루에 여러 번 돌리더라도 오늘 날짜는 중복되지 않게 한 번 지워줌
+    infinite_df = infinite_df[infinite_df['날짜'] != today_date]
+    updated_infinite_df = pd.concat([infinite_df, final_df], ignore_index=True)
+    updated_infinite_df.to_csv(SAVE_PATH_INFINITE, index=False, encoding='utf-8-sig')
+else:
+    final_df.to_csv(SAVE_PATH_INFINITE, index=False, encoding='utf-8-sig')
