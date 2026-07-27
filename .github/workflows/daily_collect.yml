@@ -26,24 +26,32 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas requests lxml html5lib
 
+    # 1. 주식 데이터 수집
     - name: Run Collector Script
       run: python collector.py
 
+    # 2. 백테스터 실행 (매매 기록 및 자산 갱신)
+    - name: Run Backtester Script
+      run: python backtester.py
+
+    # 3. 모든 결과(CSV 파일들)를 깃허브에 영구 저장
     - name: Commit & Push Changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add *.csv
-        git commit -m "Auto update stock data" || exit 0
+        git commit -m "Auto update stock & backtest data" || exit 0
         git push
 
+    # 4. 내 텔레그램으로 알림
     - name: Run Analyzer Script (My Telegram)
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: python analyzer.py
 
-    - name: Run Friend Analyzer Script (Friends Telegram Channel)
+    # 5. 친구들 채널로 알림
+    - name: Run Friend Analyzer Script (Friends Telegram)
       env:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         FRIEND_CHAT_ID: ${{ secrets.FRIEND_CHAT_ID }}
